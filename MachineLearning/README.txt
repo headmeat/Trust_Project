@@ -1,1 +1,1 @@
-사용자의 영향력을 예측하는 다중 선형 회귀(예측) 모델
+calc.py was originally untitled4.py,,,

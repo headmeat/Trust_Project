@@ -1,0 +1,52 @@
+import tweepy, time
+from ddd import HelloWorldExample
+from neo4j import GraphDatabase
+
+consumer_key = "VDYQ6fesb6SLvguwMdlJRoDQ9" 
+consumer_secret = "yvam37RvBfAHHIMl89GFajRLjuwx993nyPLibhpS2x9ikZYFLP"
+access_token = "1345005038129750016-klLIpAPrkld9uRuy1vRIENgxbpcURY" 
+access_token_secret = "IoaDSaBsxfPGpOjcPzJfsuXRVjmete9IHXCJOK7TJMykQ"
+
+# authorization of consumer key and consumer secret 
+auth = tweepy.OAuthHandler(consumer_key, consumer_secret) 
+  
+# set access to user's access key and access secret  
+auth.set_access_token(access_token, access_token_secret) 
+  
+# calling the api  
+api = tweepy.API(auth)
+
+lst = ['Nike', 'LouisVuitton', 'Hermes_Paris', 'gucci', 'adidas', 'TiffanyAndCo', 'ZARA', 'hm', 'lululemon', 'Moncler', 'CHANEL', 'ROLEX', 'Prada', 'swarovski', 'Burberry', 'RalphLauren', 'TOMFORD', 'thenorthface', 'Levi’s', 'VictoriasSecret', 'newbalance', 'MichaelKors', 'tjmaxx', 'ASOS', 'UnderArmour', 'Coach', 'Nordstrom']
+seen = []
+
+for i in range(len(lst)):
+    lst[i] = "@"+lst[i]
+c=0
+with GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "1234")) as driver:
+    with driver.session() as session:
+        for user in lst:
+            values = session.write_transaction(HelloWorldExample.insertNode, user)
+        length = len(lst)
+        i = 0
+        for user in lst:
+            print("c:",c)
+            seen.append(user)
+            c+=1
+            
+            while i<length:
+                print("i:",i)
+                others = lst[i]
+                if others in seen: 
+                    i+=1
+                    continue
+            
+                try:
+                    status = api.show_friendship(source_screen_name=user, target_screen_name=others)
+                    i += 1
+                except Exception:
+                    print("API TIMEOUT OCCURRED.")
+                    time.sleep(200)
+
+                if status[0].following==True: session.write_transaction(HelloWorldExample.insertRel, user, others)
+                if status[1].following==True: session.write_transaction(HelloWorldExample.insertRel, others, user)
+            i = 0
